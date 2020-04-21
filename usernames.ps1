@@ -30,13 +30,16 @@ foreach($komp2 in $komps2){
     $pc_users2=$pc_users2+$komp2
   }
 
-
-  $comparing=Compare-Object -ReferenceObject $pc_users.user -DifferenceObject $pc_users2.user 
-
-  $addtoquery=$comparing | Where-Object {$_.SideIndicator -match "<="} | Select-Object -ExpandProperty InputObject
-
   
+$comparing=Compare-Object -ReferenceObject $pc_users.hostname -DifferenceObject $pc_users2.hostname
 
 
+$addtoquery=$comparing | Where-Object {$_.SideIndicator -match "<="} | Select-Object -ExpandProperty InputObject
+
+foreach($item in $addtoquery){
+  $pc_users=$pc_users.hostname+$item
+}  
+
+$pc_users
   
   
