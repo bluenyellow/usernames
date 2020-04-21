@@ -3,9 +3,8 @@ $komps2= Import-Csv -Path 'C:\Users\Alex Adamica\Desktop\pc2.csv'
 
 class Pcko
 {
-    # Optionally, add attributes to prevent invalid values
     [ValidateNotNullOrEmpty()][string]$hostname
-    [ValidateNotNullOrEmpty()][string]$user
+    [string]$user
   }
 
   $pc_users = [System.Collections.ArrayList]@()
@@ -29,17 +28,22 @@ foreach($komp2 in $komps2){
     }
     $pc_users2=$pc_users2+$komp2
   }
-
+  
   
 $comparing=Compare-Object -ReferenceObject $pc_users.hostname -DifferenceObject $pc_users2.hostname
 
 
-$addtoquery=$comparing | Where-Object {$_.SideIndicator -match "<="} | Select-Object -ExpandProperty InputObject
+$addtoquery=$comparing | Where-Object {$_.SideIndicator -match "=>"} | Select-Object -ExpandProperty InputObject
 
 foreach($item in $addtoquery){
-  $pc_users=$pc_users.hostname+$item
-}  
+  $komp3 = [Pcko]@{
+    hostname = $item
+    user = ""
+  
+  }
+  $pc_users=$pc_users+$komp3
+} 
+$pc_users.hostname
 
-$pc_users
-  
-  
+
+#od tejto casti sa zacina nacitavanie userov a ich porovnavanie
