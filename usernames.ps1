@@ -35,13 +35,14 @@ $comparing=Compare-Object -ReferenceObject $pc_users.hostname -DifferenceObject 
 
 $addtoquery=$comparing | Where-Object {$_.SideIndicator -match "=>"} | Select-Object -ExpandProperty InputObject
 
+#pridanie hostnamov do array
 foreach($item in $addtoquery){
-  $komp3 = [Pcko]@{
+  $item = [Pcko]@{
     hostname = $item
     user = ""
   
   }
-  $pc_users=$pc_users+$komp3
+  $pc_users=$pc_users+$item
 } 
 $pc_users.hostname
 
