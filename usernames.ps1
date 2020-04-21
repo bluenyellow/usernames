@@ -31,10 +31,12 @@ foreach($komp2 in $komps2){
   }
 
 
-  $comparing=Compare-Object -ReferenceObject $pc_users.user -DifferenceObject $pc_users2.user
+  $comparing=Compare-Object -ReferenceObject $pc_users.user -DifferenceObject $pc_users2.user 
 
- $comparing.InputObject
+  $addtoquery=$comparing | Where-Object {$_.SideIndicator -match "<="} | Select-Object -ExpandProperty InputObject
+
+  
 
 
   
-  # $pc_users2
+  
