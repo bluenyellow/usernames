@@ -1,5 +1,9 @@
-$komps = Import-Csv -Path 'C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv'
-$komps2= Get-ADComputer -Filter *  #|  Where{$_.Name -match "traffic-0"} 
+#Variable $testfile checks if u 
+
+$testfile=Test-Path C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv
+
+if(!$testfile){
+  $pcs= Get-ADComputer -Filter * 
 
 
 class Pcko
@@ -8,14 +12,79 @@ class Pcko
     [string]$user
   }
 
-  $pc_users = [System.Collections.ArrayList]@()
-  $pc_users2 = [System.Collections.ArrayList]@()
+$allpc=[System.Collections.ArrayList]@()
+
+foreach($pc in $pcs){
+
+       $pc = [Pcko]@{
+           hostname = $pc.Name
+           user = ""
+
+    }
+    $allpc=$allpc+$pc
+    }
+    
+
+
+
+$wusers=[System.Collections.ArrayList]@()
+    
+foreach($onepc in $allpc){
+
+
+$isup=Test-Connection -Count 1 $onepc.hostname -Quiet
+        
+        if($isup){
+        
+            $usr=Get-WmiObject Win32_Desktop -ComputerName $onepc.hostname | Where-Object {$_.Name -notmatch 'mikusek'} | Where-Object {$_.Name -notmatch 'hudacin'} | Where-Object {$_.Name -notmatch 'selicky'} | Where-Object {$_.Name -notmatch 'zilavy'} | Where-Object {$_.Name -notmatch 'vanco'} |  Where-Object {$_.Name -notmatch 'NT AUTHORITY'} | Where-Object {$_.Name -notmatch '.DEFAULT'} | Where-Object {$_.Name -notmatch 'frcka'} |  Where-Object {$_.Name -notmatch 'kocurik'} |  Where-Object {$_.Name -notmatch 'haburaj'} |  Where-Object {$_.Name -notmatch 'otcenas'} |  Where-Object {$_.Name -notmatch 'dcadmin'} | Where-Object {$_.Name -notmatch 'adamica'} | Where-Object {$_.Name -notmatch 'teleky'} | Where-Object {$_.Name -notmatch 'Administrator'} | Where-Object {$_.Name -notmatch 'siket'} | Select-Object -ExpandProperty Name
+            $onepc = [Pcko]@{
+            hostname = $onepc.hostname
+            user = $usr
+                }
+
+          $wusers=$wusers+$onepc
+          
+    }
+
+        else{
+              $onepc = [Pcko]@{
+              hostname = $onepc.hostname
+              user = ""
+                }
+
+          $wusers=$wusers+$onepc
+     }
+
+       }
+
+$wusers | Export-Csv -Path C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv -NoTypeInformation
+
+}
+
+##############################################PART2######################
+
+else{
+  
+#Loading computer names and users from csv
+
+$komps = Import-Csv -Path 'C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv'
+$komps2= Get-ADComputer -Filter *   
+
+
+#class Pcko
+#{
+ # [string]$hostname
+  #[string]$user
+  #}
+
+$pc_users = [System.Collections.ArrayList]@()
+$pc_users2 = [System.Collections.ArrayList]@()
 
 foreach($komp in $komps){
 
     $komp = [Pcko]@{
-            hostname = $komp.hostname
-            user = $komp.user
+          hostname = $komp.hostname
+          user = $komp.user
 
     }
     $pc_users=$pc_users+$komp
@@ -23,8 +92,8 @@ foreach($komp in $komps){
   }
 foreach($komp2 in $komps2){
     $komp2 = [Pcko]@{
-        hostname = $komp2.Name
-        user = ""
+           hostname = $komp2.Name
+           user = ""
 
     }
     $pc_users2=$pc_users2+$komp2
@@ -34,64 +103,67 @@ foreach($komp2 in $komps2){
 $comparing=Compare-Object -ReferenceObject $pc_users.hostname -DifferenceObject $pc_users2.hostname
 
 $addtoquery=$comparing | Where-Object {$_.SideIndicator -match "=>"} 
-#$addtoquery.InputObject
+
 
 #pridanie hostnamov do array
 foreach($item in $addtoquery){
-  $item = [Pcko]@{
-    hostname = $item.InputObject
-    user = ""
+    $item = [Pcko]@{
+          hostname = $item.InputObject
+          user = ""
   
   }
-  $pc_users=$pc_users+$item
+    $pc_users=$pc_users+$item
 } 
-$pcaktualne=$pc_users | Sort -Property hostname    #POTIALTO JE TO FUNKCNE
+$pcaktualne=$pc_users | Sort-Object -Property hostname    #POTIALTO JE TO FUNKCNE
 
 
 
 
 $wusers=[System.Collections.ArrayList]@()            
-#$test=$pcaktualne #.hostname
-#$uz=$test
 
-$uz=$pcaktualne
+$allpc=$pcaktualne
 
 
 #od tejto casti sa zacina nacitavanie userov a ich porovnavanie
 
 
-foreach($t in $uz){
+foreach($onepc in $allpc){
    
-                 
-
-        $isup=Test-Connection -Count 1 $t.hostname -Quiet
+      $isup=Test-Connection -Count 1 $onepc.hostname -Quiet
         
-        if($isup){
+      if($isup){
         
-        $usr=gwmi Win32_Desktop -ComputerName $t.hostname | Where {$_.Name -notmatch 'vanco'} |  Where {$_.Name -notmatch 'NT AUTHORITY'} | Where {$_.Name -notmatch '.DEFAULT'} | Where {$_.Name -notmatch 'frcka'} |  Where {$_.Name -notmatch 'kocurik'} |  Where {$_.Name -notmatch 'haburaj'} |  Where {$_.Name -notmatch 'otcenas'} |  Where {$_.Name -notmatch 'dcadmin'} | Where {$_.Name -notmatch 'adamica'} | Where {$_.Name -notmatch 'teleky'} | Where {$_.Name -notmatch 'Administrator'} | Where {$_.Name -notmatch 'siket'} | Select -ExpandProperty Name
-        $t = [Pcko]@{
-                hostname = $t.hostname
-                user = $usr
+          $usr=Get-WmiObject Win32_Desktop -ComputerName $onepc.hostname | Where-Object {$_.Name -notmatch 'mikusek'} | Where-Object {$_.Name -notmatch 'hudacin'} | Where-Object {$_.Name -notmatch 'selicky'} | Where-Object {$_.Name -notmatch 'zilavy'} | Where-Object {$_.Name -notmatch 'vanco'} | Where-Object {$_.Name -notmatch 'NT AUTHORITY'} | Where-Object {$_.Name -notmatch '.DEFAULT'} | Where-Object {$_.Name -notmatch 'frcka'} |  Where-Object {$_.Name -notmatch 'kocurik'} |  Where-Object {$_.Name -notmatch 'haburaj'} |  Where-Object {$_.Name -notmatch 'otcenas'} |  Where-Object {$_.Name -notmatch 'dcadmin'} | Where-object {$_.Name -notmatch 'adamica'} | Where-object {$_.Name -notmatch 'teleky'} | Where-Object {$_.Name -notmatch 'Administrator'} | Where-Object {$_.Name -notmatch 'siket'} | Select-Object -ExpandProperty Name
+          $onepc = [Pcko]@{
+                 hostname = $onepc.hostname
+                 user = $usr
                 }
 
-          $wusers=$wusers+$t
-           #$uz=$uz+$t
+          $wusers=$wusers+$onepc
+           
     }
   }
-     $wusers.user | ForEach-Object {
+      $wusers.user | ForEach-Object {
               
-            if ($uz.user -contains $_) {
-                Write-Host "`$uz contains the `$wusers string [$_]"
+      if ($allpc.user -contains $_) {
+          Write-Host "`$allpc contains the `$wusers string [$_]"
         } 
-            else{Write-Host "`$uz not contain the `$wusers string [$_]"
-                 $pozicia=$wusers.user.IndexOf($_)
-                 $hostnejm=$wusers[$pozicia].hostname
+      
+      else{Write-Host "`$allpc not contain the `$wusers string [$_]"
+          $pozicia=$wusers.user.IndexOf($_)
+          $hostnejm=$wusers[$pozicia].hostname
 
-                 $ph=$uz.hostname.IndexOf($hostnejm)
-                 $uz[$ph].user=$wusers[$pozicia].user
+          $ph=$allpc.hostname.IndexOf($hostnejm)
+          $allpc[$ph].user=$wusers[$pozicia].user
         }
 }
      
      
-     $uz | Export-Csv -Path C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv -NoTypeInformation
+$allpc | Export-Csv -Path C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv -NoTypeInformation
      
+     
+     
+}     
+     
+     
+
