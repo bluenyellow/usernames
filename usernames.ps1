@@ -1,15 +1,15 @@
 
 <#
-important an need to change parts of code:
+Important an need to change parts of code:
 
-csv file is input and output file used to store information about users and hostnames. This csv file is created at first run of this script and will be rewritten on at each run of this script.
+uzivatelia.csv file is input and output file used to store information about users and hostnames. This csv file is created at first run of this script and will be rewritten on at each run of this script.
 You can choose the path of this csv file.
 
-Brief xplanation of this script:
+Brief explanation of this script:
 Its have two parts : 
 1. First run: Load all computers from domain , check users logged on them(RDP or locally),and create csv file where every hostname have assigned user
 
-2. Other runs: Load csv created at last run, compare hostnames from csv and newly loaded hostnames from domain. User check is performed on updated hostnames and old csv file is overwritten by new.
+2. Other runs: Load uzivatelia.csv created at last run, compare hostnames from csv and newly loaded hostnames from domain. User check is performed on updated hostnames and old csv file is overwritten by new.
 
 If user value is null , the username cell will not be updated, so only the not null values is written to csv files, which prevent overwriting real usernames with empty values.
 
@@ -21,19 +21,19 @@ Example usage: Put the script in Task scheduler, run it occasionaly it give you 
 
 
 
-$cesta="C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv"
+$cesta="C:\Users\user\Desktop\users\uzivatelia.csv"          #put here your own path
 
 
+###################################FIRST RUN###############################################################
 
-
-$testfile=Test-Path $cesta #C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv               
+$testfile=Test-Path $cesta                                                       
 
 
 if(!$testfile){
-  $pcs= Get-ADComputer -Filter * 
+  $pcs= Get-ADComputer -Filter *                                    #load computers from domain
 
 
-class Pcko
+class Pcko                                                        #defining class for computer
 {
     [string]$hostname
     [string]$user
@@ -41,14 +41,14 @@ class Pcko
 
 $allpc=[System.Collections.ArrayList]@()
 
-foreach($pc in $pcs){
+foreach($pc in $pcs){                                     #load computers to array
 
        $pc = [Pcko]@{
            hostname = $pc.Name
            user = ""
 
     }
-    $allpc=$allpc+$pc
+    $allpc=$allpc+$pc                                   #update array
     }
     
 
@@ -61,17 +61,17 @@ foreach($onepc in $allpc){
 
 $isup=Test-Connection -Count 1 $onepc.hostname -Quiet
         
-        if($isup){
+        if($isup){                                            #if computer is online, do operations below
             $pcq=$onepc.hostname
             $parseuser= qwinsta /SERVER:$pcq
             $usr= $parseuser -replace '\s{2,}', ',' | ConvertFrom-CSV -Header 'UserName', 'Session', 'ID', 'State', 'IdleTime', 'LogonTime' | Where-Object {($_.State -eq "Active")  -and ($_.Session -ne " ")} | Select-Object -ExpandProperty Session
-            #$usr=Get-WmiObject Win32_ComputerSystem -ComputerName $onepc.hostname | Where-Object {$_.username -notmatch 'mikusek'} | Where-Object {$_.username -notmatch 'hudacin'} | Where-Object {$_.username -notmatch 'selicky'} | Where-Object {$_.username -notmatch 'zilavy'} | Where-Object {$_.username -notmatch 'vanco'} |  Where-Object {$_.username -notmatch 'NT AUTHORITY'} | Where-Object {$_.username -notmatch '.DEFAULT'} | Where-Object {$_.username -notmatch 'frcka'} |  Where-Object {$_.username -notmatch 'kocurik'} |  Where-Object {$_.username -notmatch 'haburaj'} |  Where-Object {$_.username -notmatch 'otcenas'} |  Where-Object {$_.username -notmatch 'dcadmin'} | Where-Object {$_.username -notmatch 'adamica'} | Where-Object {$_.username -notmatch 'teleky'} | Where-Object {$_.username -notmatch 'Administrator'} | Where-Object {$_.username -notmatch 'siket'} | Select-Object -ExpandProperty username
+            
             $onepc = [Pcko]@{
-            hostname = $pcq #$onepc.hostname
+            hostname = $pcq 
             user = $usr
                 }
 
-          $wusers=$wusers+$onepc
+          $wusers=$wusers+$onepc        #add finded users to array
           
     }
 
@@ -90,13 +90,11 @@ $wusers | Export-Csv -Path $cesta -NoTypeInformation
 
 }
 
-##############################################PART2######################
+#######################SECOND RUN####################################################
 
 else{
-  
-#Loading computer names and users from csv
 
-$komps = Import-Csv -Path $cesta #'C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv'
+$komps = Import-Csv -Path $cesta          #Loading computer names and users from csv
 $komps2= Get-ADComputer -Filter *   
 
 
@@ -107,7 +105,7 @@ $pc_users2 = [System.Collections.ArrayList]@()
 
 foreach($komp in $komps){
 
-    $komp = [Pcko]@{
+    $komp = [Pcko]@{                            
           hostname = $komp.hostname
           user = $komp.user
 
@@ -124,25 +122,26 @@ foreach($komp2 in $komps2){
     $pc_users2=$pc_users2+$komp2
   }
   
+  #from here it is comparing computers previously loaded in csv and current computers from domain
 
-$comparing=Compare-Object -ReferenceObject $pc_users.hostname -DifferenceObject $pc_users2.hostname
-
-
-
-$addtoquery=$comparing | Where-Object {$_.SideIndicator -match "=>"} 
+$comparing=Compare-Object -ReferenceObject $pc_users.hostname -DifferenceObject $pc_users2.hostname           #comparing hostnames
 
 
-#pridanie hostnamov do array
+
+$addtoquery=$comparing | Where-Object {$_.SideIndicator -match "=>"}         #add all missing computers
+
+
+
 foreach($item in $addtoquery){
     $item = [Pcko]@{
           hostname = $item.InputObject
           user = ""
   
   }
-    $pc_users=$pc_users+$item
+    $pc_users=$pc_users+$item               
 } 
 
-#tu potrebujem pridat este opacne porovnavanie aby to mazalo kompy ktore sa uz v domene nenachadzaju
+#deleting computers wchich was deleted from domain
 
 $delcompare= Compare-Object -ReferenceObject $pc_users2.hostname -DifferenceObject $pc_users.hostname
 $delfromquery=$delcompare | Where-Object {$_.SideIndicator -match "=>"}
@@ -151,11 +150,11 @@ foreach($item in $delfromquery){
   $pc_users=$pc_users | Where-Object {$_.hostname -ne $item.inputobject}
 }
 
-########################################################
 
 
 
-$pcaktualne=$pc_users | Sort-Object -Property hostname    
+
+$pcaktualne=$pc_users | Sort-Object -Property hostname       #sort array by hostnames
  
 
 
@@ -164,7 +163,7 @@ $wusers=[System.Collections.ArrayList]@()
 $allpc=$pcaktualne
 
 
-#od tejto casti sa zacina nacitavanie userov a ich porovnavanie
+#checking users 
 
 
 foreach($onepc in $allpc){
@@ -175,7 +174,7 @@ foreach($onepc in $allpc){
         $pcq=$onepc.hostname
         $parseuser= qwinsta /SERVER:$pcq
         $usr= $parseuser -replace '\s{2,}', ',' | ConvertFrom-CSV -Header 'UserName', 'Session', 'ID', 'State', 'IdleTime', 'LogonTime' | Where-Object {($_.State -eq "Active")  -and ($_.Session -ne " ")} | Select-Object -ExpandProperty Session
-          #$usr=Get-WmiObject Win32_ComputerSystem -ComputerName $onepc.hostname | Where-Object {$_.username -notmatch 'mikusek'} | Where-Object {$_.username -notmatch 'hudacin'} | Where-Object {$_.username -notmatch 'selicky'} | Where-Object {$_.username -notmatch 'zilavy'} | Where-Object {$_.username -notmatch 'vanco'} |  Where-Object {$_.username -notmatch 'NT AUTHORITY'} | Where-Object {$_.username -notmatch '.DEFAULT'} | Where-Object {$_.username -notmatch 'frcka'} |  Where-Object {$_.username -notmatch 'kocurik'} |  Where-Object {$_.username -notmatch 'haburaj'} |  Where-Object {$_.username -notmatch 'otcenas'} |  Where-Object {$_.username -notmatch 'dcadmin'} | Where-Object {$_.username -notmatch 'adamica'} | Where-Object {$_.username -notmatch 'teleky'} | Where-Object {$_.username -notmatch 'Administrator'} | Where-Object {$_.username -notmatch 'siket'} | Select-Object -ExpandProperty username
+          
           $onepc = [Pcko]@{
                  hostname = $pcq #$onepc.hostname
                  user = $usr
@@ -186,31 +185,16 @@ foreach($onepc in $allpc){
     }
   }
 
-<#
-      $wusers.user | ForEach-Object {
-              
-          if ($allpc.user -contains $_) {                                      #tu zistujem ci sa username z $wusers nachadza v $allpc
-              Write-Host "`$allpc contains the `$wusers string [$_]"
-        } 
-      
-          else{Write-Host "`$allpc not contain the `$wusers string [$_]"
-              $pozicia=$wusers.user.IndexOf($_)
-              $hostnejm=$wusers[$pozicia].hostname
-
-              $ph=$allpc.hostname.IndexOf($hostnejm)
-              $allpc[$ph].user=$wusers[$pozicia].user
-        }
-}#>
-     
+#compare users  
 
 foreach($hostname in $wusers.hostname){
   
 	if ($allpc.hostname -contains $hostname){
 
-		$pozicia=$wusers.hostname.IndexOf($hostname)
-		 $juser	=$wusers[$pozicia].user
+		$pozicia=$wusers.hostname.IndexOf($hostname)      #position of hostname in array
+		 $juser	=$wusers[$pozicia].user                   #user on that hostname position
     
-     if($juser){
+     if($juser){                                      #if user is not empty....
 		 $sh=$allpc.hostname.indexOf($hostname)
      $allpc[$sh].user=$juser
      }
