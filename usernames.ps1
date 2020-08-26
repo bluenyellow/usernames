@@ -1,4 +1,33 @@
-$testfile=Test-Path C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv
+
+<#
+important an need to change parts of code:
+
+csv file is input and output file used to store information about users and hostnames. This csv file is created at first run of this script and will be rewritten on at each run of this script.
+You can choose the path of this csv file.
+
+Brief xplanation of this script:
+Its have two parts : 
+1. First run: Load all computers from domain , check users logged on them(RDP or locally),and create csv file where every hostname have assigned user
+
+2. Other runs: Load csv created at last run, compare hostnames from csv and newly loaded hostnames from domain. User check is performed on updated hostnames and old csv file is overwritten by new.
+
+If user value is null , the username cell will not be updated, so only the not null values is written to csv files, which prevent overwriting real usernames with empty values.
+
+
+Example usage: Put the script in Task scheduler, run it occasionaly it give you updated information about who use the particular computer. 
+
+#>
+
+
+
+
+$cesta="C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv"
+
+
+
+
+$testfile=Test-Path $cesta #C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv               
+
 
 if(!$testfile){
   $pcs= Get-ADComputer -Filter * 
@@ -57,7 +86,7 @@ $isup=Test-Connection -Count 1 $onepc.hostname -Quiet
 
        }
 
-$wusers | Export-Csv -Path C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv -NoTypeInformation
+$wusers | Export-Csv -Path $cesta -NoTypeInformation
 
 }
 
@@ -67,7 +96,7 @@ else{
   
 #Loading computer names and users from csv
 
-$komps = Import-Csv -Path 'C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv'
+$komps = Import-Csv -Path $cesta #'C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv'
 $komps2= Get-ADComputer -Filter *   
 
 
@@ -189,7 +218,7 @@ foreach($hostname in $wusers.hostname){
   
 }
      
-$allpc | Export-Csv -Path C:\Users\adamica.JOJ\Desktop\users\uzivatelia.csv -NoTypeInformation
+$allpc | Export-Csv -Path $cesta -NoTypeInformation
      
      
      
