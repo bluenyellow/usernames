@@ -21,7 +21,7 @@ Example usage: Put the script in Task scheduler, run it occasionaly it give you 
 
 
 
-$cesta="C:\Users\user\Desktop\users\uzivatelia.csv"          #put here your own path
+$cesta="C:\path\to\csv\uzivatelia.csv"          #put here your own path
 
 
 ###################################FIRST RUN###############################################################
